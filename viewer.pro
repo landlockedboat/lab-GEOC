@@ -118,6 +118,7 @@ SOURCES     = \
              src/geoc/geometry/Circle_utils.cc\
              src/geoc/geometry/Triangulation.cc\
              src/geoc/geometry/CgalTriangulation.cc\
+	     src/geoc/geometry/DCEL.cc\
              src/geoc/math/Vector.cc\
              src/geoc/math/Math.cc\
              src/geoc/math/Math_inline.cc\
@@ -179,6 +180,7 @@ HEADERS     = \
              src/geoc/geometry/Triangulation.h\
              src/geoc/geometry/CgalTriangulation.h\
              src/geoc/geometry/TriangulationBase.h\
+	     src/geoc/geometry/DCEL.h\
              src/geoc/math/BoundingBox.h\
              src/geoc/math/Math.h\
              src/geoc/math/Vector_fwd_decl.h\

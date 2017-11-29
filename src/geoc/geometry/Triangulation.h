@@ -3,6 +3,7 @@
 
 #include <geoc/geoc.h>
 #include <geoc/geometry/TriangulationBase.h>
+#include <geoc/geometry/DCEL.h>
 #include <geoc/math/Vector_fwd_decl.h>
 #include <vector>
 
