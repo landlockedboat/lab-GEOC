@@ -1,3 +1,21 @@
+# Viewer stuff
+Debug.mk
+Release.mk
+demos/convex_hull_2/Makefile
+demos/example/Makefile
+demos/make_grid/make-grid/Makefile
+demos/make_grid/v1-triangulation/Makefile
+demos/make_grid/v2-alpha-shape/Makefile
+demos/make_grid/v3-boundary-components/Makefile
+demos/polygon/Makefile
+exercises/exercise1/Makefile
+exercises/exercise2/Makefile
+exercises/exercise3/Makefile
+exercises/exercises4-5/Makefile
+moc_GeocApplication.cpp
+moc_GeocWidget.cpp
+moc_designer.cpp
+
 # CGAL library
 CGAL-3.8/
 
