@@ -133,15 +133,12 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
 {
     //FIND ENCLOSING TRIANGLE
 
-    num maxX, minX, avgX, maxY, minY, avgY;
-    maxX = minX = avgX = ps[0][X];
-    maxY = minY = avgY = ps[0][Y];
+    num maxX, minX, maxY, minY;
+    maxX = minX = ps[0][X];
+    maxY = minY = ps[0][Y];
 
     for(int i = 1; i < ps.size(); ++i)
     {
-       avgX += ps[i][X];
-       avgY += ps[i][Y];
-
        if(maxX < ps[i][X]) maxX = ps[i][X];
        if(minX > ps[i][X]) minX = ps[i][X];
        if(maxY < ps[i][Y]) maxY = ps[i][Y];
@@ -149,83 +146,215 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
     }
 
     //POINTS OF ENCLOSING TRIANGLE
-    //TODO: fix this
 
     Vector3 m,n,l;
-    m[0] = minX - abs((maxY-minY));;
-    m[1] = minY - 1000;
+    
+    num distX = maxX - minX;
+    num distY = maxY - minY;
+    m[0] = minX - (distY / tan(60 * 180/M_PI)) - 1000;
+    m[1] = minY -1000;
     m[2] = 0;
-    n[0] = minX + abs((maxX - minX)/2);
-    n[1] = maxY + abs(maxX - minX);
+    n[0] = maxX + (distY / tan(60 * 180/M_PI)) + 1000;
+    n[1] = minY - 1000;
     n[2] = 0;
-    l[0] = maxX + abs((maxY-minY));
-    l[1] = minY - 1000;
+    l[0] = (maxX + minX) / 2;
+    l[1] = maxY + (distX/2) * tan(60 * 180/M_PI) + 1000;
     l[2] = 0;
 
     Face *f = constructEnclosingTriangle(m,n,l);
 
-    /////////// INSERT POINTS ////////////////
-    //orientation test -> = 0 (on line), > 0 (left), < 0 (right)
-
-    for(int i; i < ps.size(); ++i) {
+    /*Vector3 a = f->getBoundary()->getOrigin()->getVertex();
+    Vector3 b = f->getBoundary()->getNext()->getOrigin()->getVertex();
+    Vector3 c = f->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
+    num test;
+    for (int i = 0; i < ps.size(); ++i) {
         Vector3 w = ps[i];
+        test = triangleTest(a,b,c,w);
+        if(test == 2) std::cout << "error" << std::endl;
+    }
+    std::cout << "end" << std::endl;*/
+
+    for (int i = 0; i < ps.size(); ++i) {
+        //FIND WHERE THE POINT IS LOCATED
+        //THIS CAN BE IMPROVED
+        Vector3 p = ps[i];
         bool found = false;
-        while(not found) {
-            HalfEdge *e = f->getBoundary();
-            int j = 0;
-            //Walk through the triangulation to find the given point
-            //All triangles except the one where the triangle is located have some segment which is to the right of the point 
-            //(the point is to the left of the segment)
-            bool objective = false;
-            while(not objective and j < 3) {
-                Vector3 p = e->getOrigin()->getVertex();
-                Vector3 q = e->getNext()->getOrigin()->getVertex();
-                if(Math::orientation2D(p,q,w) > 0) {
-                    f = e->getTwin()->getFace();
-                    objective = true;
-                }
-                e = e->getNext();
-                ++j;
+        int j = 0;
+        Face *f1;
+        num test;
+        while (not found) {
+            f1 = faces[j];
+            Vector3 a = f1->getBoundary()->getOrigin()->getVertex();
+            Vector3 b = f1->getBoundary()->getNext()->getOrigin()->getVertex();
+            Vector3 c = f1->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
+            test = triangleTest(a,b,c,p);
+            if(test != 2) found = true;
+            else ++j;
+        }
+        //At this point we should have found the face
+
+        Vertex *w = new Vertex(p,NULL);
+        vertices.push_back(w);
+
+        
+        if (test == 0) {
+            //THE POINT IS INSIDE
+            //RENAME STUFF
+            HalfEdge *eAB = f1->getBoundary();
+            HalfEdge *eBA = eAB->getTwin();
+            HalfEdge *eBC = eAB->getNext();
+            HalfEdge *eCB = eBC->getTwin();
+            HalfEdge *eCA = eBC->getNext();
+            HalfEdge *eAC = eCA->getTwin();
+
+            Vertex *a = eAB->getOrigin();
+            Vertex *b = eBC->getOrigin();
+            Vertex *c = eCA->getOrigin();
+
+            //CREATE FACES
+            Face *f2 = new Face(NULL);
+            Face *f3 = new Face(NULL);
+            faces.push_back(f2);
+            faces.push_back(f3);
+
+            //CREATE EDGES
+            HalfEdge *eAW = new HalfEdge(a,f3,NULL,NULL);
+            HalfEdge *eWA = new HalfEdge(w,f1,eAW,NULL);
+            HalfEdge *eBW = new HalfEdge(b,f1,NULL,NULL);
+            HalfEdge *eWB = new HalfEdge(w,f2,eBW,NULL);
+            HalfEdge *eCW = new HalfEdge(c,f2,NULL,NULL);
+            HalfEdge *eWC = new HalfEdge(w,f3,eCW,NULL);
+            edges.push_back(eAW);
+            edges.push_back(eWA);
+            edges.push_back(eBW);
+            edges.push_back(eWB);
+            edges.push_back(eCW);
+            edges.push_back(eWC);
+
+            //TIE EDGES
+            eAW->setTwin(eWA);
+            eBW->setTwin(eWB);
+            eCW->setTwin(eWC);
+
+            eAB->setNext(eBW);
+            eBW->setNext(eWA);
+            eWA->setNext(eAB);
+
+            eBC->setNext(eCW);
+            eCW->setNext(eWB);
+            eWB->setNext(eBC);
+
+            eCA->setNext(eAW);
+            eAW->setNext(eWC);
+            eWC->setNext(eCA);
+
+            eBC->setFace(f2);
+            eCA->setFace(f3);
+
+            //TIE FACES
+            f2->setBoundary(eBC);
+            f3->setBoundary(eCA);
+
+            //TIE VERTEX
+            w->setLeaving(eWA);
+        }
+        else if (test == 1) {
+            //THE POINT IS IN AN EDGE
+
+            HalfEdge *eCA = f1->getBoundary();
+            bool intersect = false;
+            for (int k = 0; k < 3 and not intersect; ++k) {
+                Vector3 A = eCA->getOrigin()->getVertex();
+                Vector3 B = eCA->getNext()->getOrigin()->getVertex();
+                if (onSegment(A,B,p)) intersect = true;
+                else eCA = eCA->getNext();
             }
-            //
-            if(not objective) {
-                found = true;
-            }
-            //At this point, the point is in face f
-            Face *location = f;
 
-            //Push the new vertex
-            Vertex *v = new Vertex(w,NULL);
-            vertices.push_back(v);
+            //GET EXISTING FACES
+            Face *F1 = eCA->getFace();
+            Face *f2 = eCA->getTwin()->getFace();
 
-            //Rename important stuff for readability
-            HalfEdge *ab = f->getBoundary();
-            HalfEdge *bc = f->getBoundary()->getNext();
-            HalfEdge *ca = f->getBoundary()->getNext()->getNext();
-            Vertex *a = ab->getOrigin();
-            Vertex *b = bc->getOrigin();
-            Vertex *c = ca->getOrigin();
+            //CREATE FACES
+            Face *f3 = new Face(NULL);
+            Face *f4 = new Face(NULL);
+            faces.push_back(f3);
+            faces.push_back(f4);
 
-            //Is the point in an edge?
-            Vector3 A = a->getVertex();
-            Vector3 B = b->getVertex();
-            Vector3 C = c->getVertex();
+            //GET EXISTING EDGES
+            HalfEdge *eAB = eCA->getNext();
+            HalfEdge *eBC = eAB->getNext();
+            HalfEdge *eAC = eCA->getTwin();
+            HalfEdge *eCD = eAC->getNext();
+            HalfEdge *eDA = eCD->getNext();
+            
 
-            num test1 = Math::orientation2D(A,B,w);
-            num test2 = Math::orientation2D(B,C,w);
-            num test3 = Math::orientation2D(C,A,w);
+            //GET VERTICES
+            Vertex *a = eAB->getOrigin();
+            Vertex *b = eBC->getOrigin();
+            Vertex *c = eCD->getOrigin();
+            Vertex *d = eDA->getOrigin();
 
-            if((test1 == 0 and onSegment(A,B,w)) or (test2 == 0 and onSegment(B,C,w)) or (test3 == 0 and onSegment(C,A,w))) {
-                //ON EDGE
-                //CREATE EVERYTHING
-                HalfEdge *ba = ab->getTwin();
-                HalfEdge *ac = ba->getNext();
-                HalfEdge *cb = ac->getNext();
-            }
-            else {
-                //INSIDE
-            }
+            //CREATE HALFEDGES
+            HalfEdge *eBW = new HalfEdge(b,F1,NULL,NULL);
+            HalfEdge *eWB = new HalfEdge(w,f3,eBW,NULL);
+            HalfEdge *eCW = new HalfEdge(c,f3,NULL,NULL);
+            HalfEdge *eWC = new HalfEdge(w,f4,eCW,NULL);
+            HalfEdge *eDW = new HalfEdge(d,f4,NULL,NULL);
+            HalfEdge *eWD = new HalfEdge(w,f2,eDW,NULL);
+            edges.push_back(eBW);
+            edges.push_back(eWB);
+            edges.push_back(eCW);
+            edges.push_back(eWC);
+            edges.push_back(eDW);
+            edges.push_back(eWD);
 
+            //TIE EDGES
+
+            eBW->setTwin(eWB);
+            eCW->setTwin(eWC);
+            eDW->setTwin(eWD);
+
+            eAB->setNext(eBW);
+            eBW->setNext(eCA);
+            eCA->setNext(eAB);
+
+            eBC->setNext(eCW);
+            eCW->setNext(eWB);
+            eWB->setNext(eBC);
+
+            eCD->setNext(eDW);
+            eDW->setNext(eWC);
+            eWC->setNext(eCD);
+
+            eDA->setNext(eAC);
+            eAC->setNext(eWD);
+            eWD->setNext(eDA);
+
+            //some inecessary stuff here but just in case
+            eAB->setFace(F1);
+            eBW->setFace(F1);
+            eCA->setFace(F1);
+
+            eBC->setFace(f3);
+            eCW->setFace(f3);
+            eWB->setFace(f3);
+
+            eCD->setFace(f4);
+            eDW->setFace(f4);
+            eWC->setFace(f4);
+
+            eDA->setFace(f2);
+            eAC->setFace(f2);
+            eWD->setFace(f2);
+
+            //TIE FACES
+            F1->setBoundary(eAB);
+            f2->setBoundary(eDA);
+            f3->setBoundary(eBC);
+            f4->setBoundary(eCD);
+
+            //TIE VERTEX
+            w->setLeaving(eCA);
         }
     }
 }

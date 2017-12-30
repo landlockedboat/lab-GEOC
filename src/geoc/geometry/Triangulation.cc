@@ -39,9 +39,15 @@ void Triangulation::triangulate(const std::vector<Vector3>& ps,
     
     for(int i = 0; i < faces.size(); ++i)
     {
-       Vector3 v1 = faces[i]->getBoundary()->getOrigin()->getVertex();
-       Vector3 v2 = faces[i]->getBoundary()->getNext()->getOrigin()->getVertex();
-       Vector3 v3 = faces[i]->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
-       triangles.push_back(Triangle(v1,v2,v3));
-   }   
+        Vertex *v1 = faces[i]->getBoundary()->getOrigin();
+        Vertex *v2 = faces[i]->getBoundary()->getNext()->getOrigin();
+        Vertex *v3 = faces[i]->getBoundary()->getNext()->getNext()->getOrigin();
+        //if(v1->getDraw() and v2->getDraw() and v3->getDraw())
+        //{
+            Vector3 a = v1->getVertex();
+            Vector3 b = v2->getVertex();
+            Vector3 c = v3->getVertex();
+            triangles.push_back(Triangle(a,b,c));
+        //}
+    }   
 }

@@ -4,6 +4,7 @@
 #include <geoc/geoc.h>
 #include <geoc/math/Vector.h>
 #include <geoc/math/Math.h>
+#include <math.h>
 #include <vector>
 
 namespace geoc {

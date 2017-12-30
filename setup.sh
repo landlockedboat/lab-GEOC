@@ -1,5 +1,5 @@
 #!/bin/bash
-ROOT=`/bin/pwd`
+ROOT=`pwd`
 EXERCISES_DIR=$ROOT/exercises
 DEMOS_DIR=$ROOT/demos
 CGAL_DIR=$ROOT/CGAL-3.8
