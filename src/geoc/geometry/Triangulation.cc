@@ -33,7 +33,7 @@ void Triangulation::triangulate(const std::vector<Vector3>& ps,
     
     // Add code here.
 
-    DCEL dcel = DCEL(false,ps);
+    DCEL dcel = DCEL(true,ps);
 
     vector<Face*> faces = dcel.getFaces();
     

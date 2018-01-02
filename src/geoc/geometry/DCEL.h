@@ -6,6 +6,7 @@
 #include <geoc/math/Math.h>
 #include <math.h>
 #include <vector>
+#include <stack>
 
 namespace geoc {
 
@@ -66,6 +67,7 @@ namespace geoc {
 	    std::vector<Vertex*> vertices;
 	    std::vector<HalfEdge*> edges;
 	    std::vector<Face*> faces;
+	    bool compareVectors(Vector3& a, Vector3& b);
 	    Face* constructEnclosingTriangle(Vector3& a, Vector3& b, Vector3& c);
 	    num triangleTest(Vector3& p, Vector3& q, Vector3& r, Vector3& w);
 	    bool onSegment(const Vector3& p, const Vector3& q, const Vector3& r);

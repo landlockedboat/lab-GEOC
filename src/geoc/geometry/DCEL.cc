@@ -129,6 +129,8 @@ void Face::setBoundary(HalfEdge *b)
 
 /******** DCEL *************/
 
+Face* ext;
+
 DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
 {
     //FIND ENCLOSING TRIANGLE
@@ -196,222 +198,300 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
         Vertex *w = new Vertex(p,NULL);
         vertices.push_back(w);
 
+        //INCIDENT FACES
+        Face *face1, *face2, *face3, *face4;
+        face1 = face2 = face3 = face4 = NULL;
         
         if (test == 0) {
             //THE POINT IS INSIDE
-            //RENAME STUFF
+            //GET STUFF
+            
             HalfEdge *eAB = f1->getBoundary();
-            HalfEdge *eBA = eAB->getTwin();
             HalfEdge *eBC = eAB->getNext();
-            HalfEdge *eCB = eBC->getTwin();
             HalfEdge *eCA = eBC->getNext();
-            HalfEdge *eAC = eCA->getTwin();
 
             Vertex *a = eAB->getOrigin();
             Vertex *b = eBC->getOrigin();
             Vertex *c = eCA->getOrigin();
 
             //CREATE FACES
-            Face *f2 = new Face(NULL);
-            Face *f3 = new Face(NULL);
+            Face *f2 = new Face();
+            Face *f3 = new Face();
             faces.push_back(f2);
             faces.push_back(f3);
 
             //CREATE EDGES
-            HalfEdge *eAW = new HalfEdge(a,f3,NULL,NULL);
-            HalfEdge *eWA = new HalfEdge(w,f1,eAW,NULL);
-            HalfEdge *eBW = new HalfEdge(b,f1,NULL,NULL);
-            HalfEdge *eWB = new HalfEdge(w,f2,eBW,NULL);
-            HalfEdge *eCW = new HalfEdge(c,f2,NULL,NULL);
-            HalfEdge *eWC = new HalfEdge(w,f3,eCW,NULL);
+            HalfEdge *eAW = new HalfEdge();
+            HalfEdge *eBW = new HalfEdge();
+            HalfEdge *eCW = new HalfEdge();
+            HalfEdge *eWA = new HalfEdge();
+            HalfEdge *eWB = new HalfEdge();
+            HalfEdge *eWC = new HalfEdge();
             edges.push_back(eAW);
-            edges.push_back(eWA);
             edges.push_back(eBW);
-            edges.push_back(eWB);
             edges.push_back(eCW);
+            edges.push_back(eWA);
+            edges.push_back(eWB);
             edges.push_back(eWC);
 
+            //TIE VERTEX
+            w->setLeaving(eWA);
+            a->setLeaving(eAB);
+            b->setLeaving(eBC);
+            c->setLeaving(eCA);
+
+            //TIE FACES
+            f1->setBoundary(eAB);
+            f2->setBoundary(eBC);
+            f3->setBoundary(eCA);
+
             //TIE EDGES
-            eAW->setTwin(eWA);
-            eBW->setTwin(eWB);
-            eCW->setTwin(eWC);
+            eAB->setOrigin(a);
+            eBC->setOrigin(b);
+            eCA->setOrigin(c);
+
+            eAW->setOrigin(a);
+            eBW->setOrigin(b);
+            eCW->setOrigin(c);
+            eWA->setOrigin(w);
+            eWB->setOrigin(w);
+            eWC->setOrigin(w);
 
             eAB->setNext(eBW);
             eBW->setNext(eWA);
             eWA->setNext(eAB);
+            eAB->setFace(f1);
+            eBW->setFace(f1);
+            eWA->setFace(f1);
 
             eBC->setNext(eCW);
             eCW->setNext(eWB);
             eWB->setNext(eBC);
+            eBC->setFace(f2);
+            eCW->setFace(f2);
+            eWB->setFace(f2);
 
             eCA->setNext(eAW);
             eAW->setNext(eWC);
             eWC->setNext(eCA);
-
-            eBC->setFace(f2);
             eCA->setFace(f3);
+            eAW->setFace(f3);
+            eWC->setFace(f3);
 
-            //TIE FACES
-            f2->setBoundary(eBC);
-            f3->setBoundary(eCA);
+            eAW->setTwin(eWA);
+            eBW->setTwin(eWB);
+            eCW->setTwin(eWC);
+            eWA->setTwin(eAW);
+            eWB->setTwin(eBW);
+            eWC->setTwin(eCW);
 
-            //TIE VERTEX
-            w->setLeaving(eWA);
+            face1 = f1;
+            face2 = f2;
+            face3 = f3;
         }
         else if (test == 1) {
             //THE POINT IS IN AN EDGE
 
-            HalfEdge *eCA = f1->getBoundary();
+            HalfEdge *eBC = f1->getBoundary();
             bool intersect = false;
-            for (int k = 0; k < 3 and not intersect; ++k) {
-                Vector3 A = eCA->getOrigin()->getVertex();
-                Vector3 B = eCA->getNext()->getOrigin()->getVertex();
-                if (onSegment(A,B,p)) intersect = true;
-                else eCA = eCA->getNext();
+            for(int k = 0; k < 3 and not intersect; ++k)
+            {
+                Vector3 A = eBC->getOrigin()->getVertex();
+                Vector3 B = eBC->getNext()->getOrigin()->getVertex();
+                if(onSegment(A,B,p)) intersect = true;
+                else eBC = eBC->getNext();
             }
 
-            //GET EXISTING FACES
-            Face *F1 = eCA->getFace();
-            Face *f2 = eCA->getTwin()->getFace();
+            Face *f2 = eBC->getTwin()->getFace(); //this exists because of enclosing triangle
+
+            HalfEdge *eCA = eBC->getNext();
+            HalfEdge *eAB = eCA->getNext();
+
+            HalfEdge *eCB = eBC->getTwin();
+            HalfEdge *eBD = eCB->getNext();
+            HalfEdge *eDC = eBD->getNext();
+
+            Vertex *a = eAB->getOrigin();
+            Vertex *b = eBC->getOrigin();
+            Vertex *c = eCA->getOrigin();
+            Vertex *d = eDC->getOrigin();
 
             //CREATE FACES
-            Face *f3 = new Face(NULL);
-            Face *f4 = new Face(NULL);
+            Face *f3 = new Face();
+            Face *f4 = new Face();
             faces.push_back(f3);
             faces.push_back(f4);
 
-            //GET EXISTING EDGES
-            HalfEdge *eAB = eCA->getNext();
-            HalfEdge *eBC = eAB->getNext();
-            HalfEdge *eAC = eCA->getTwin();
-            HalfEdge *eCD = eAC->getNext();
-            HalfEdge *eDA = eCD->getNext();
-            
-
-            //GET VERTICES
-            Vertex *a = eAB->getOrigin();
-            Vertex *b = eBC->getOrigin();
-            Vertex *c = eCD->getOrigin();
-            Vertex *d = eDA->getOrigin();
-
-            //CREATE HALFEDGES
-            HalfEdge *eBW = new HalfEdge(b,F1,NULL,NULL);
-            HalfEdge *eWB = new HalfEdge(w,f3,eBW,NULL);
-            HalfEdge *eCW = new HalfEdge(c,f3,NULL,NULL);
-            HalfEdge *eWC = new HalfEdge(w,f4,eCW,NULL);
-            HalfEdge *eDW = new HalfEdge(d,f4,NULL,NULL);
-            HalfEdge *eWD = new HalfEdge(w,f2,eDW,NULL);
-            edges.push_back(eBW);
-            edges.push_back(eWB);
+            //CREATE EDGES
+            HalfEdge *eAW = new HalfEdge();
+            HalfEdge *eCW = new HalfEdge();
+            HalfEdge *eDW = new HalfEdge();
+            HalfEdge *eWA = new HalfEdge();
+            HalfEdge *eWC = new HalfEdge();
+            HalfEdge *eWD = new HalfEdge();
+            edges.push_back(eAW);
             edges.push_back(eCW);
-            edges.push_back(eWC);
             edges.push_back(eDW);
+            edges.push_back(eWA);
+            edges.push_back(eWC);
             edges.push_back(eWD);
 
-            //TIE EDGES
-
-            eBW->setTwin(eWB);
-            eCW->setTwin(eWC);
-            eDW->setTwin(eWD);
-
-            eAB->setNext(eBW);
-            eBW->setNext(eCA);
-            eCA->setNext(eAB);
-
-            eBC->setNext(eCW);
-            eCW->setNext(eWB);
-            eWB->setNext(eBC);
-
-            eCD->setNext(eDW);
-            eDW->setNext(eWC);
-            eWC->setNext(eCD);
-
-            eDA->setNext(eAC);
-            eAC->setNext(eWD);
-            eWD->setNext(eDA);
-
-            //some inecessary stuff here but just in case
-            eAB->setFace(F1);
-            eBW->setFace(F1);
-            eCA->setFace(F1);
-
-            eBC->setFace(f3);
-            eCW->setFace(f3);
-            eWB->setFace(f3);
-
-            eCD->setFace(f4);
-            eDW->setFace(f4);
-            eWC->setFace(f4);
-
-            eDA->setFace(f2);
-            eAC->setFace(f2);
-            eWD->setFace(f2);
+            //TIE VERTEX
+            a->setLeaving(eAB);
+            b->setLeaving(eBC);
+            c->setLeaving(eCA);
+            d->setLeaving(eDC);
+            w->setLeaving(eWA);
 
             //TIE FACES
-            F1->setBoundary(eAB);
-            f2->setBoundary(eDA);
-            f3->setBoundary(eBC);
-            f4->setBoundary(eCD);
+            f1->setBoundary(eAB);
+            f2->setBoundary(eBD);
+            f3->setBoundary(eCA);
+            f4->setBoundary(eDC);
 
-            //TIE VERTEX
-            w->setLeaving(eCA);
+            //TIE EDGES
+            eAB->setOrigin(a);
+            eBC->setOrigin(b);
+            eWA->setOrigin(w);
+
+            eCB->setOrigin(w);
+            eBD->setOrigin(b);
+            eDW->setOrigin(d);
+
+            eCA->setOrigin(c);
+            eAW->setOrigin(a);
+            eWC->setOrigin(w);
+
+            eDC->setOrigin(d);
+            eCW->setOrigin(c);
+            eWD->setOrigin(w);
+
+            eAB->setNext(eBC);
+            eBC->setNext(eWA);
+            eWA->setNext(eAB);
+            eAB->setFace(f1);
+            eBC->setFace(f1);
+            eWA->setFace(f1);
+
+            eCB->setNext(eBD);
+            eBD->setNext(eDW);
+            eDW->setNext(eCB);
+            eCB->setFace(f2);
+            eBD->setFace(f2);
+            eDW->setFace(f2);
+
+            eCA->setNext(eAW);
+            eAW->setNext(eWC);
+            eWC->setNext(eCA);
+            eCA->setFace(f3);
+            eAW->setFace(f3);
+            eWC->setFace(f3);
+
+            eDC->setNext(eCW);
+            eCW->setNext(eWD);
+            eWD->setNext(eDC);
+            eDC->setFace(f4);
+            eCW->setFace(f4);
+            eWD->setFace(f4);
+
+            eAW->setTwin(eWA);
+            eCW->setTwin(eWC);
+            eDW->setTwin(eWD);
+            eWA->setTwin(eAW);
+            eWC->setTwin(eCW);
+            eWD->setTwin(eDW);
+
+            face1 = f1;
+            face2 = f2;
+            face3 = f3;
+            face4 = f4;
+        }
+
+
+        //DELAUNAY ALGORITHM
+        if(delaunay)
+        {            
+            
         }
     }
 }
 
-Face* DCEL::constructEnclosingTriangle(Vector3& a, Vector3& b, Vector3& c)
+bool DCEL::compareVectors(Vector3& a, Vector3& b)
+{
+    if(a[X] == b[X] and a[Y] == b[Y] and a[Z] == b[Z]) return true;
+    else return false;
+}
+
+Face* DCEL::constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C)
 {
     //CREATE DCEL STUFF
     //VERTICES
-    Vertex *vA = new Vertex(a, NULL);
-    Vertex *vB = new Vertex(b, NULL);
-    Vertex *vC = new Vertex(c, NULL);
-    vertices.push_back(vA);
-    vertices.push_back(vB);
-    vertices.push_back(vC);
+    Vertex *a = new Vertex(A, NULL);
+    Vertex *b = new Vertex(B, NULL);
+    Vertex *c = new Vertex(C, NULL);
+    vertices.push_back(a);
+    vertices.push_back(b);
+    vertices.push_back(c);
 
     //FACES FWD DECLARATION
     Face *exterior = new Face(NULL);
     Face *f = new Face(NULL);
     faces.push_back(exterior);
     faces.push_back(f);
+    ext = exterior;
 
     //HALFEDGES
-    HalfEdge *eAB = new HalfEdge(vA, f, NULL, NULL);
-    HalfEdge *eBA = new HalfEdge(vB, exterior, NULL, NULL);
-    HalfEdge *eBC = new HalfEdge(vB, f, NULL, NULL);
-    HalfEdge *eCB = new HalfEdge(vC, exterior, NULL, NULL);
-    HalfEdge *eCA = new HalfEdge(vC, f, NULL, NULL);
-    HalfEdge *eAC = new HalfEdge(vA, exterior, NULL, NULL);
+    HalfEdge *eAB = new HalfEdge();
+    HalfEdge *eBC = new HalfEdge();
+    HalfEdge *eCA = new HalfEdge();
+    HalfEdge *eBA = new HalfEdge();
+    HalfEdge *eAC = new HalfEdge();
+    HalfEdge *eCB = new HalfEdge();
     edges.push_back(eAB);
-    edges.push_back(eBA);
     edges.push_back(eBC);
-    edges.push_back(eCB);
     edges.push_back(eCA);
+    edges.push_back(eBA);
     edges.push_back(eAC);
+    edges.push_back(eCB);
+    
 
     //TIE VERTICES
-    vA->setLeaving(eAB);
-    vB->setLeaving(eBC);
-    vC->setLeaving(eCA);
+    a->setLeaving(eAB);
+    b->setLeaving(eBC);
+    c->setLeaving(eCA);
 
     //TIE FACES
     exterior->setBoundary(eBA);
     f->setBoundary(eAB);
 
     //TIE HalfEdgeS
-    eAB->setTwin(eBA);
+    eAB->setOrigin(a);
+    eBC->setOrigin(b);
+    eCA->setOrigin(c);
+    eBA->setOrigin(b);
+    eAC->setOrigin(a);
+    eCB->setOrigin(c);
+
     eAB->setNext(eBC);
-    eBA->setTwin(eAB);
-    eBA->setNext(eAC);
-    eBC->setTwin(eCB);
     eBC->setNext(eCA);
-    eCB->setTwin(eBC);
-    eCB->setNext(eBA);
-    eCA->setTwin(eAC);
     eCA->setNext(eAB);
-    eAC->setTwin(eCA);
+    eBA->setNext(eAC);
     eAC->setNext(eCB);
+    eCB->setNext(eBA);
+
+    eAB->setTwin(eBA);
+    eBC->setTwin(eCB);
+    eCA->setTwin(eAC);
+    eBA->setTwin(eAB);
+    eAC->setTwin(eCA);
+    eCB->setTwin(eBC);
+
+    eAB->setFace(f);
+    eBC->setFace(f);
+    eCA->setFace(f);
+    eBA->setFace(exterior);
+    eAC->setFace(exterior);
+    eCB->setFace(exterior);
 
     return f;
 }
