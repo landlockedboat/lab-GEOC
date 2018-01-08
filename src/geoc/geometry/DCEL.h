@@ -68,20 +68,19 @@ namespace geoc {
 	    std::vector<HalfEdge*> edges;
 	    std::vector<Face*> faces;
 	    bool compareVectors(Vector3& a, Vector3& b);
-	    Face* constructEnclosingTriangle(Vector3& a, Vector3& b, Vector3& c);
+	    void constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C);
 	    num triangleTest(Vector3& p, Vector3& q, Vector3& r, Vector3& w);
-	    bool onSegment(const Vector3& p, const Vector3& q, const Vector3& r);
-	    
-	    void insertPoint(bool delaunay, Vector3& p, Face* f);
+	    bool onSegment(const Vector3& p, const Vector3& q, const Vector3& r);	    
+	    void insertPoint(bool delaunay, Vector3& p);
 	    void insertPointInsideTriangle(Vertex* w, Face* f1, Face* f2, Face* f3);
 	    void insertPointInTriangleEdge(Vertex* w, Face* f1, Face* f2,
 			Face* f3, Face* f4);
 		void makeDelaunay(Vertex* w, Face* face1, Face* face2, Face* face3, Face* face4);
-	    void doDelaunayFlip(HalfEdge* eBA);
-	    
+	    void doDelaunayFlip(HalfEdge* eCB);	    
 	    void tieEdges(HalfEdge* eAB, Vertex* a, HalfEdge* eBA, Vertex* b);
-	    void makeTriangle(Vertex* a, Vertex* b, Vertex* c, HalfEdge* eAC, HalfEdge* eCB, HalfEdge* eBA, HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
 		void tieTriangle(HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
+
+		void correctTriangle(Face* f);
 
 
 	public:

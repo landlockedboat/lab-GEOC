@@ -9,8 +9,10 @@ num Math::orientation2D(const Vector3& p, const Vector3& q, const Vector3& r)
 {
     //Exercise 1. 
     //orientation test -> = 0 (on line), > 0 (left), < 0 (right)
-	num res = ((q[X] - p[X]) * (r[Y] - p[Y])) - ((r[X] - p[X]) * (q[Y] - p[Y]));
-	return res;
+	//num res = ((q[X] - p[X]) * (r[Y] - p[Y])) - ((r[X] - p[X]) * (q[Y] - p[Y]));
+	//return res;
+    float crossProduct = ((q[X] - p[X]) * (r[Y] - p[Y]) - (q[Y] - p[Y]) * (r[X] - p[X]));
+    return crossProduct == 0 ? 0 : ( crossProduct > 0 ? 1 : -1 ) ;
 }
 
 

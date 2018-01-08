@@ -155,54 +155,6 @@ void DCEL::tieEdges(HalfEdge* eAB, Vertex* a, HalfEdge* eBA, Vertex* b)
     eBA->setTwin(eAB);
 }
 
-void DCEL::makeTriangle(
-    Vertex* a,
-    Vertex* b,
-    Vertex* c,
-    HalfEdge* eAB,
-    HalfEdge* eBC,
-    HalfEdge* eCA,
-    HalfEdge* eBA,
-    HalfEdge* eAC,
-    HalfEdge* eCB,
-    Face* f
-    )
-{
-    tieEdges(eAB, a, eBA, b);
-    tieEdges(eBC, b, eCB, c);
-    tieEdges(eCA, c, eAC, a);
-    
-    tieTriangle(eAB, eBC, eCA, f);
-
-}
-
-/*oid makeCounterClockwise(
-    Vertex* a,
-    Vertex* b,
-    Vertex* c,
-    HalfEdge* eAB,
-    HalfEdge* eBC,
-    HalfEdge* eCA
-    )
-{
-    Vector3 A = a->getVertex();
-    Vector3 B = b->getVertex();
-    Vector3 C = c->getVertex();
-
-    num clockwise = Math::orientation2D(A, B, C);
-    if(!clockwise)
-    {
-        return;
-    }
-
-    eAB = eAB->getTwin();
-    eBC = eBC->getTwin();
-    eCA = eCA->getTwin();
-
-    a = eAB->getOrigin();
-    b = eBC->getOrigin();
-    c = eCA->getOrigin();
-}*/
 
 void DCEL::insertPointInsideTriangle(
     Vertex* w,
@@ -212,7 +164,6 @@ void DCEL::insertPointInsideTriangle(
 {
     //THE POINT IS INSIDE
     //GET STUFF
-    
     HalfEdge *eAB = f1->getBoundary();
     HalfEdge *eBC = eAB->getNext();
     HalfEdge *eCA = eBC->getNext();
@@ -222,6 +173,8 @@ void DCEL::insertPointInsideTriangle(
     Vertex *c = eCA->getOrigin();
 
     //CREATE FACES
+    f2 = new Face();
+    f3 = new Face();    
     faces.push_back(f2);
     faces.push_back(f3);
 
@@ -231,8 +184,7 @@ void DCEL::insertPointInsideTriangle(
     HalfEdge *eCW = new HalfEdge();
     HalfEdge *eWA = new HalfEdge();
     HalfEdge *eWB = new HalfEdge();
-    HalfEdge *eWC = new HalfEdge();
-    
+    HalfEdge *eWC = new HalfEdge();    
     edges.push_back(eAW);
     edges.push_back(eBW);
     edges.push_back(eCW);
@@ -252,6 +204,17 @@ void DCEL::insertPointInsideTriangle(
     tieTriangle(eAB, eBW, eWA, f1);
     tieTriangle(eBC, eCW, eWB, f2);
     tieTriangle(eWC, eCA, eAW, f3);
+
+    //CORRECT CLOCKWISE
+    Vector3 A = a->getVertex();
+    Vector3 B = b->getVertex();
+    Vector3 C = c->getVertex();
+    Vector3 W = w->getVertex();
+
+    //Swap b for c
+    if(Math::orientation2D(A,B,W) < 0) correctTriangle(f1);
+    if(Math::orientation2D(B,C,W) < 0) correctTriangle(f2);
+    if(Math::orientation2D(C,A,W) < 0) correctTriangle(f3);
 }
 
 void DCEL::insertPointInTriangleEdge(
@@ -273,8 +236,6 @@ void DCEL::insertPointInTriangleEdge(
         else eBC = eBC->getNext();
     }
 
-    f2 = eBC->getTwin()->getFace(); //this exists because of enclosing triangle
-
     HalfEdge *eCA = eBC->getNext();
     HalfEdge *eAB = eCA->getNext();
 
@@ -284,8 +245,24 @@ void DCEL::insertPointInTriangleEdge(
 
     Vertex *a = eAB->getOrigin();
     Vertex *b = eBC->getOrigin();
-    Vertex *c = eCA->getOrigin();
+    Vertex *c = eCB->getOrigin();
     Vertex *d = eDC->getOrigin();
+
+    f2 = eCB->getFace();
+
+    //CREATE HALFEDGES
+    HalfEdge *eAW = new HalfEdge();
+    HalfEdge *eWA = new HalfEdge();
+    HalfEdge *eCW = new HalfEdge();
+    HalfEdge *eWC = new HalfEdge();
+    HalfEdge *eDW = new HalfEdge();
+    HalfEdge *eWD = new HalfEdge();
+    edges.push_back(eAW);
+    edges.push_back(eWA);
+    edges.push_back(eCW);
+    edges.push_back(eWC);
+    edges.push_back(eDW);
+    edges.push_back(eWD);
 
     //CREATE FACES
     f3 = new Face();
@@ -293,89 +270,33 @@ void DCEL::insertPointInTriangleEdge(
     faces.push_back(f3);
     faces.push_back(f4);
 
-    //CREATE EDGES
-    HalfEdge *eAW = new HalfEdge();
-    HalfEdge *eCW = new HalfEdge();
-    HalfEdge *eDW = new HalfEdge();
-    HalfEdge *eWA = new HalfEdge();
-    HalfEdge *eWC = new HalfEdge();
-    HalfEdge *eWD = new HalfEdge();
-    edges.push_back(eAW);
-    edges.push_back(eCW);
-    edges.push_back(eDW);
-    edges.push_back(eWA);
-    edges.push_back(eWC);
-    edges.push_back(eWD);
+    tieTriangle(eAB, eBC, eWA, f1);
+    tieTriangle(eCB, eBD, eDW, f2);
+    tieTriangle(eCW, eWD, eDC, f3);
+    tieTriangle(eWC, eCA, eAW, f4);
+    
+    tieEdges(eAW,a,eWA,w);
+    tieEdges(eBC,b,eCB,w);
+    tieEdges(eCW,c,eWC,w);
+    tieEdges(eDW,d,eWD,w);
 
-    //TIE VERTEX
-    a->setLeaving(eAB);
-    b->setLeaving(eBC);
-    c->setLeaving(eCA);
-    d->setLeaving(eDC);
-    w->setLeaving(eWA);
+    //CORRECT CLOCKWISE
+    Vector3 A = a->getVertex();
+    Vector3 B = b->getVertex();
+    Vector3 C = c->getVertex();
+    Vector3 D = d->getVertex();
+    Vector3 W = w->getVertex();
 
-    //TIE FACES
-    f1->setBoundary(eAB);
-    f2->setBoundary(eBD);
-    f3->setBoundary(eCA);
-    f4->setBoundary(eDC);
-
-    //TIE EDGES
-    eAB->setOrigin(a);
-    eBC->setOrigin(b);
-    eWA->setOrigin(w);
-
-    eCB->setOrigin(w);
-    eBD->setOrigin(b);
-    eDW->setOrigin(d);
-
-    eCA->setOrigin(c);
-    eAW->setOrigin(a);
-    eWC->setOrigin(w);
-
-    eDC->setOrigin(d);
-    eCW->setOrigin(c);
-    eWD->setOrigin(w);
-
-    eAB->setNext(eBC);
-    eBC->setNext(eWA);
-    eWA->setNext(eAB);
-    eAB->setFace(f1);
-    eBC->setFace(f1);
-    eWA->setFace(f1);
-
-    eCB->setNext(eBD);
-    eBD->setNext(eDW);
-    eDW->setNext(eCB);
-    eCB->setFace(f2);
-    eBD->setFace(f2);
-    eDW->setFace(f2);
-
-    eCA->setNext(eAW);
-    eAW->setNext(eWC);
-    eWC->setNext(eCA);
-    eCA->setFace(f3);
-    eAW->setFace(f3);
-    eWC->setFace(f3);
-
-    eDC->setNext(eCW);
-    eCW->setNext(eWD);
-    eWD->setNext(eDC);
-    eDC->setFace(f4);
-    eCW->setFace(f4);
-    eWD->setFace(f4);
-
-    eAW->setTwin(eWA);
-    eCW->setTwin(eWC);
-    eDW->setTwin(eWD);
-    eWA->setTwin(eAW);
-    eWC->setTwin(eCW);
-    eWD->setTwin(eDW);
+    //Swap b for c
+    if(Math::orientation2D(A,B,W) < 0) correctTriangle(f1);
+    if(Math::orientation2D(B,D,W) < 0) correctTriangle(f2);
+    if(Math::orientation2D(D,C,W) < 0) correctTriangle(f3);
+    if(Math::orientation2D(C,A,W) < 0) correctTriangle(f4);
 }
 
-void DCEL::doDelaunayFlip(HalfEdge* eBA)
+void DCEL::doDelaunayFlip(HalfEdge* eCB)
 {
-        HalfEdge *eAW = eBA->getNext();
+        /*HalfEdge *eAW = eBA->getNext();
         HalfEdge *eWB = eAW->getNext();
         
         HalfEdge *eAB = eBA->getTwin();
@@ -393,7 +314,7 @@ void DCEL::doDelaunayFlip(HalfEdge* eBA)
         tieTriangle(eBV, eBA, eWB, face1);
         tieTriangle(eVA, eAW, eAB, face2);
         
-        tieEdges(eAB, w, eBA, v);        
+        tieEdges(eAB, w, eBA, v);*/     
 }
 
 
@@ -417,62 +338,44 @@ Face* face4)
         stack.pop();
 
         //GET EVERYTHING
-        HalfEdge *eWB = current->getBoundary();
+        HalfEdge *eWC = current->getBoundary();
         //find actual edWB
-        Vector3 point = eWB->getOrigin()->getVertex();
+        Vector3 point = eWC->getOrigin()->getVertex();
         Vector3 p = w->getVertex();
         
         while(not compareVectors(p,point))
         {
-            eWB = eWB->getNext();
-            point = eWB->getOrigin()->getVertex();
+            eWC = eWC->getNext();
+            point = eWC->getOrigin()->getVertex();
         }
         
-        HalfEdge *eBA = eWB->getNext();
-        HalfEdge *eAW = eBA->getNext();
-        
-        HalfEdge *eAB = eBA->getTwin();
-        HalfEdge *eBV = eAB->getNext();
-        HalfEdge *eVA = eBV->getNext();
-        
-        Vertex *a = eAW->getOrigin();
-        Vertex *b = eBV->getOrigin();
-        Vertex *v = eVA->getOrigin();
-        
-        Face *f2 = eAB->getFace();
-        
-        if(f2 == ext)
-        {
-            return;
-        }
-        
+        HalfEdge *eCB = eWC->getNext();
+        HalfEdge *eBW = eCB->getNext();
+
+        HalfEdge *eBC = eCB->getTwin();
+        HalfEdge *eCA = eBC->getNext();
+        HalfEdge *eAB = eCA->getNext();
+
+        Vertex *a = eAB->getOrigin();
+        Vertex *b = eBW->getOrigin();
+        Vertex *c = eCB->getOrigin();
+
         Vector3 A = a->getVertex();
         Vector3 B = b->getVertex();
-        Vector3 V = v->getVertex();
+        Vector3 C = c->getVertex();
         Vector3 W = w->getVertex();
-        
-        num test = Math::orientation2D(W,A,B);
 
-        if(test < 0)
-        {
-            return;
-        }
-        
-        num isInterior = Math::orientation25D(W,A,B,V);
-        
-        if(not isInterior)
-        {
-            continue;            
-        }
-        
-        doDelaunayFlip(eBA);
-        
-        stack.push(current);
-        stack.push(f2);
+        Face *reverse = eBC->getFace();
+
+        if(reverse != ext) {
+            if(Math::orientation25D(B,W,C,A) > 0) {
+                
+            }
+        }        
     }
 }
 
-void DCEL::insertPoint(bool delaunay, Vector3& p, Face* f)
+void DCEL::insertPoint(bool delaunay, Vector3& p)
 {
     //FIND WHERE THE POINT IS LOCATED
     //THIS CAN BE IMPROVED
@@ -480,11 +383,12 @@ void DCEL::insertPoint(bool delaunay, Vector3& p, Face* f)
     int j = faces.size()-1;
     Face *f1;
     num test;
+    Vector3 a,b,c;
     while (not found) {
         f1 = faces[j];
-        Vector3 a = f1->getBoundary()->getOrigin()->getVertex();
-        Vector3 b = f1->getBoundary()->getNext()->getOrigin()->getVertex();
-        Vector3 c = f1->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
+        a = f1->getBoundary()->getOrigin()->getVertex();
+        b = f1->getBoundary()->getNext()->getOrigin()->getVertex();
+        c = f1->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
         test = triangleTest(a,b,c,p);
         if(test != 2) found = true;
         else --j;
@@ -499,22 +403,32 @@ void DCEL::insertPoint(bool delaunay, Vector3& p, Face* f)
     face1 = face2 = face3 = face4 = NULL;
     if (test == 0) {
         face1 = f1;
-        face2 = new Face();
-        face3 = new Face();
         insertPointInsideTriangle(w, face1, face2, face3);
     }
-    /*else if (test == 1) {
+    else if (test == 1) {
         face1 = f1;
         insertPointInTriangleEdge(w, face1, face2, face3, face4);
-    }*/
+    }
 
     //DELAUNAY ALGORITHM
-    /*if(delaunay)
+    if(delaunay)
     {
         makeDelaunay(w, face1, face2, face3, face4);
-    }*/
+    }
 }
 
+void DCEL::correctTriangle(Face* f)
+{
+    HalfEdge *eAB = f->getBoundary();
+    HalfEdge *eBC = f->getBoundary()->getNext();
+    HalfEdge *eCA = f->getBoundary()->getNext()->getNext();
+
+    Vertex *b = eBC->getOrigin();
+    Vertex *c = eCA->getOrigin();
+
+    eBC->setOrigin(c);
+    eCA->setOrigin(b);
+}
 
 
 DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
@@ -536,34 +450,43 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
 
     Vector3 m,n,l;
     
+    //  m
+    // n l
+
     num distX = maxX - minX;
     num distY = maxY - minY;
-    l[0] = minX - (distY / tan(60 * 180/M_PI)) - 1000;
-    l[1] = minY -1000;
-    l[2] = 0;
-    n[0] = maxX + (distY / tan(60 * 180/M_PI)) + 1000;
-    n[1] = minY - 1000;
+    n[0] = minX - (distY / tan(60 * 180/M_PI)) - 1000;
+    n[1] = minY -1000;
     n[2] = 0;
+    l[0] = maxX + (distY / tan(60 * 180/M_PI)) + 1000;
+    l[1] = minY - 1000;
+    l[2] = 0;
     m[0] = (maxX + minX) / 2;
     m[1] = maxY + (distX/2) * tan(60 * 180/M_PI) + 1000;
     m[2] = 0;
 
-    Face *f = constructEnclosingTriangle(m,n,l);
+    constructEnclosingTriangle(m,n,l);
 
     for (int i = 0; i < ps.size(); ++i) {
         Vector3 p = ps[i];
-        insertPoint(delaunay, p, f);
+        insertPoint(delaunay, p);
     }
 
     //TESTING
-    for (int j = 0; j < faces.size(); ++j) {
+    /*for (int j = 0; j < faces.size(); ++j) {
         Face *f = faces[j];
         Vector3 a = f->getBoundary()->getOrigin()->getVertex();
         Vector3 b = f->getBoundary()->getNext()->getOrigin()->getVertex();
         Vector3 c = f->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
-        if(f != ext and Math::orientation2D(a,b,c) > 0) cout << "ERROR" << endl;
+        if(f != ext and Math::orientation2D(a,b,c) < 0) {
+            cout << "ERROR: " << j << endl;
+            //cout << a[X] << "," << a[Y] << "," << a[Z] << endl;
+            //cout << b[X] << "," << b[Y] << "," << b[Z] << endl;
+            //cout << c[X] << "," << c[Y] << "," << c[Z] << endl;
+            cout << Math::orientation2D(a,b,c) << endl;
+        }
     }
-    cout << "OK" << endl;
+    cout << "OK" << endl;*/
 }
 
 bool DCEL::compareVectors(Vector3& a, Vector3& b)
@@ -572,7 +495,7 @@ bool DCEL::compareVectors(Vector3& a, Vector3& b)
     else return false;
 }
 
-Face* DCEL::constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C)
+void DCEL::constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C)
 {
     //CREATE DCEL STUFF
     //VERTICES
@@ -603,12 +526,14 @@ Face* DCEL::constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C)
     edges.push_back(eBA);
     edges.push_back(eAC);
     edges.push_back(eCB);
-    
-    makeTriangle(a, b, c, eAB, eBC, eCA, eBA, eAC, eCB, f);
 
-    tieTriangle(eBA, eAC, eCB, exterior);
+    tieTriangle(eAB,eBC,eCA,f);
+    tieTriangle(eBA,eAC,eCB,exterior);
 
-    return f;
+    tieEdges(eAB,a,eBA,b);
+    tieEdges(eBC,b,eCB,c);
+    tieEdges(eCA,c,eAC,a);
+
 }
 
 //Recieves a triangle pqr and a test point w
