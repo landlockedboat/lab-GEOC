@@ -181,7 +181,7 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
         //THIS CAN BE IMPROVED
         Vector3 p = ps[i];
         bool found = false;
-        int j = 0;
+        int j = faces.size()-1;
         Face *f1;
         num test;
         while (not found) {
@@ -191,7 +191,7 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
             Vector3 c = f1->getBoundary()->getNext()->getNext()->getOrigin()->getVertex();
             test = triangleTest(a,b,c,p);
             if(test != 2) found = true;
-            else ++j;
+            else --j;
         }
         //At this point we should have found the face
 
@@ -411,7 +411,74 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
         //DELAUNAY ALGORITHM
         if(delaunay)
         {            
-            
+            stack<Face*> stack;
+            //push adjacent faces
+            if(face1 != NULL) stack.push(face1);
+            if(face2 != NULL) stack.push(face2);
+            if(face3 != NULL) stack.push(face3);
+            if(face4 != NULL) stack.push(face4);
+
+            while(not stack.empty())
+            {
+                Face* current = stack.top();
+                stack.pop();
+
+                //GET EVERYTHING
+                HalfEdge *eWA = current->getBoundary();
+                //find actual eWA
+                Vector3 point = eWA->getOrigin()->getVertex();
+                while(not compareVectors(p,point))
+                {
+                    eWA = eWA->getNext();
+                    point = eWA->getOrigin()->getVertex();
+                }
+                HalfEdge *eAB = eWA->getNext();
+                HalfEdge *eBW = eAB->getNext();
+
+                HalfEdge *eBA = eAB->getTwin();
+                HalfEdge *eAC = eBA->getNext();
+                HalfEdge *eCB = eAC->getNext();
+
+                Face *reverse = eBA->getFace();
+
+                Vertex *a = eAB->getOrigin();
+                Vertex *b = eBA->getOrigin();
+                Vertex *c = eCB->getOrigin();
+
+                Vector3 A = a->getVertex();
+                Vector3 B = b->getVertex();
+                Vector3 C = c->getVertex();
+
+                num o1 = Math::orientation2D(p,A,B);
+                num o2 = Math::orientation25D(p,A,B,C);
+
+                //if((o2 < 0 and o1 > 0) or (o2 > 0 and o1 < 0))
+                if(o2 < 0 and o1 > 0)
+                {
+                    eBA->setOrigin(w);
+                    eAB->setOrigin(c);
+
+                    eWA->setNext(eAC);
+                    eAC->setNext(eAB);
+                    eAB->setNext(eWA);
+                    eWA->setFace(current);
+                    eAC->setFace(current);
+                    eAB->setFace(current);
+
+                    eBW->setNext(eBA);
+                    eBA->setNext(eCB);
+                    eCB->setNext(eBW);
+                    eBW->setFace(reverse);
+                    eBA->setFace(reverse);
+                    eCB->setFace(reverse);
+
+                    current->setBoundary(eWA);
+                    reverse->setBoundary(eCB);
+
+                    stack.push(current);
+                    stack.push(reverse);
+                }
+            }
         }
     }
 }
