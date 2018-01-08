@@ -80,6 +80,7 @@ namespace geoc {
 	    void doDelaunayFlip(HalfEdge* eBA);
 	    
 	    void tieEdges(HalfEdge* eAB, Vertex* a, HalfEdge* eBA, Vertex* b);
+	    void makeTriangle(Vertex* a, Vertex* b, Vertex* c, HalfEdge* eAC, HalfEdge* eCB, HalfEdge* eBA, HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
 		void tieTriangle(HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
 
 
