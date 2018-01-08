@@ -71,6 +71,18 @@ namespace geoc {
 	    Face* constructEnclosingTriangle(Vector3& a, Vector3& b, Vector3& c);
 	    num triangleTest(Vector3& p, Vector3& q, Vector3& r, Vector3& w);
 	    bool onSegment(const Vector3& p, const Vector3& q, const Vector3& r);
+	    
+	    void insertPoint(bool delaunay, Vector3& p, Face* f);
+	    void insertPointInsideTriangle(Vertex* w, Face* f1, Face* f2, Face* f3);
+	    void insertPointInTriangleEdge(Vertex* w, Face* f1, Face* f2,
+			Face* f3, Face* f4);
+		void makeDelaunay(Vertex* w, Face* face1, Face* face2, Face* face3, Face* face4);
+	    void doDelaunayFlip(HalfEdge* eBA);
+	    
+	    void tieEdges(HalfEdge* eAB, Vertex* a, HalfEdge* eBA, Vertex* b);
+		void tieTriangle(HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
+
+
 	public:
 	    DCEL(bool delaunay, const std::vector<Vector3>& ps); //construct from set of points
 	    ~DCEL();
