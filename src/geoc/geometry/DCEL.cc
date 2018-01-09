@@ -325,6 +325,8 @@ Face* face2,
 Face* face3,
 Face* face4)
 {
+    cout << "begin" << endl;
+
     stack<Face*> stack;
     //push adjacent faces
     if(face1 != NULL) stack.push(face1);
@@ -342,7 +344,7 @@ Face* face4)
         //find actual edWB
         Vector3 point = eWC->getOrigin()->getVertex();
         Vector3 p = w->getVertex();
-        
+
         while(not compareVectors(p,point))
         {
             eWC = eWC->getNext();
@@ -368,11 +370,19 @@ Face* face4)
         Face *reverse = eBC->getFace();
 
         if(reverse != ext) {
-            if(Math::orientation25D(B,W,C,A) > 0) {
-                
+            if(Math::orientation25D(W,C,B,A) > 0) {
+                //do the flip
+                tieEdges(eCB,w,eBC,a);
+
+                tieTriangle(eCB,eAB,eBW,current);
+                tieTriangle(eBC,eWC,eCA,reverse);
+
+                stack.push(current);
+                stack.push(reverse);
             }
         }        
     }
+    cout << "end" << endl;
 }
 
 void DCEL::insertPoint(bool delaunay, Vector3& p)
