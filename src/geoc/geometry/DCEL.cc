@@ -367,6 +367,7 @@ Face* face4)
             Vector3 V = v->getVertex();
 
             if(Math::orientation2D(W,A,B) < 0 and Math::orientation25D(W,A,B,V) > 0) {
+                cout << 1 << endl;
 
                 eAB->setOrigin(w);
                 eBA->setOrigin(v);
@@ -392,7 +393,8 @@ Face* face4)
             }
             else if(Math::orientation2D(W,A,B) > 0 and Math::orientation25D(W,A,B,V) < 0) {
 
-                eAB->setOrigin(v);
+                cout << "asdf" << endl;
+                /*eAB->setOrigin(v);
                 eBA->setOrigin(w);
 
                 eWA->setNext(eAV);
@@ -412,7 +414,7 @@ Face* face4)
                 reverse->setBoundary(eBA);
 
                 stack.push(current);
-                stack.push(reverse);
+                stack.push(reverse);*/
             }
         }
     }
@@ -456,7 +458,7 @@ void DCEL::insertPoint(bool delaunay, Vector3& p)
     //DELAUNAY ALGORITHM
     if(delaunay)
     {
-        //makeDelaunay(w, face1, face2, face3, face4);
+        makeDelaunay(w, face1, face2, face3, face4);
     }
 }
 
