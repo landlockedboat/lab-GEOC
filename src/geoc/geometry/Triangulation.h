@@ -6,6 +6,8 @@
 #include <geoc/geometry/DCEL.h>
 #include <geoc/math/Vector_fwd_decl.h>
 #include <vector>
+#include <algorithm>
+#include <ctime>
 
 namespace geoc {
 

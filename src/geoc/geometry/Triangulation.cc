@@ -32,8 +32,11 @@ void Triangulation::triangulate(const std::vector<Vector3>& ps,
     printf("Compiling student triangulation\n");
     
     // Add code here.
+    std::srand(std::time(0));
+    std::vector<Vector3> points = ps;
+    std::random_shuffle(points.begin(), points.end());
 
-    DCEL dcel = DCEL(true,ps);
+    DCEL dcel = DCEL(true,points);
 
     vector<Face*> faces = dcel.getFaces();
     

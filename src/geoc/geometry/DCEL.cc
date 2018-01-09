@@ -325,8 +325,7 @@ Face* face2,
 Face* face3,
 Face* face4)
 {
-    cout << "begin" << endl;
-
+    
     stack<Face*> stack;
     //push adjacent faces
     if(face1 != NULL) stack.push(face1);
@@ -339,50 +338,84 @@ Face* face4)
         Face* current = stack.top();
         stack.pop();
 
-        //GET EVERYTHING
-        HalfEdge *eWC = current->getBoundary();
-        //find actual edWB
-        Vector3 point = eWC->getOrigin()->getVertex();
+        HalfEdge *eWA = current->getBoundary();
+        //get real eWA
+        Vector3 point = eWA->getOrigin()->getVertex();
         Vector3 p = w->getVertex();
-
-        while(not compareVectors(p,point))
-        {
-            eWC = eWC->getNext();
-            point = eWC->getOrigin()->getVertex();
+        while(not compareVectors(point,p)) {
+            eWA = eWA->getNext();
+            point = eWA->getOrigin()->getVertex();
         }
-        
-        HalfEdge *eCB = eWC->getNext();
-        HalfEdge *eBW = eCB->getNext();
 
-        HalfEdge *eBC = eCB->getTwin();
-        HalfEdge *eCA = eBC->getNext();
-        HalfEdge *eAB = eCA->getNext();
+        HalfEdge *eAB = eWA->getNext();
+        HalfEdge *eBW = eAB->getNext();
 
-        Vertex *a = eAB->getOrigin();
-        Vertex *b = eBW->getOrigin();
-        Vertex *c = eCB->getOrigin();
+        HalfEdge *eBA = eAB->getTwin();
+        HalfEdge *eAV = eBA->getNext();
+        HalfEdge *eVB = eAV->getNext();
 
-        Vector3 A = a->getVertex();
-        Vector3 B = b->getVertex();
-        Vector3 C = c->getVertex();
-        Vector3 W = w->getVertex();
-
-        Face *reverse = eBC->getFace();
+        Face *reverse = eBA->getFace();
 
         if(reverse != ext) {
-            if(Math::orientation25D(W,C,B,A) > 0) {
-                //do the flip
-                tieEdges(eCB,w,eBC,a);
+            Vertex *a = eAB->getOrigin();
+            Vertex *b = eBA->getOrigin();
+            Vertex *v = eVB->getOrigin();
 
-                tieTriangle(eCB,eAB,eBW,current);
-                tieTriangle(eBC,eWC,eCA,reverse);
+            Vector3 W = w->getVertex();
+            Vector3 A = a->getVertex();
+            Vector3 B = b->getVertex();
+            Vector3 V = v->getVertex();
+
+            if(Math::orientation2D(W,A,B) < 0 and Math::orientation25D(W,A,B,V) > 0) {
+
+                eAB->setOrigin(w);
+                eBA->setOrigin(v);
+
+                eWA->setNext(eAV);
+                eAV->setNext(eBA);
+                eBA->setNext(eWA);
+                eWA->setFace(current);
+                eAV->setFace(current);
+                eBA->setFace(current);
+                current->setBoundary(eWA);
+
+                eAB->setNext(eVB);
+                eVB->setNext(eBW);
+                eBW->setNext(eAB);
+                eAB->setFace(reverse);
+                eVB->setFace(reverse);
+                eBW->setFace(reverse);
+                reverse->setBoundary(eAB);
+                
+                stack.push(current);
+                stack.push(reverse);  
+            }
+            else if(Math::orientation2D(W,A,B) > 0 and Math::orientation25D(W,A,B,V) < 0) {
+
+                eAB->setOrigin(v);
+                eBA->setOrigin(w);
+
+                eWA->setNext(eAV);
+                eAV->setNext(eAB);
+                eAB->setNext(eWA);
+                eWA->setFace(current);
+                eAV->setFace(current);
+                eAB->setFace(current);
+                current->setBoundary(eWA);
+
+                eBA->setNext(eVB);
+                eVB->setNext(eBW);
+                eBW->setNext(eBA);
+                eBA->setFace(reverse);
+                eVB->setFace(reverse);
+                eBW->setFace(reverse);
+                reverse->setBoundary(eBA);
 
                 stack.push(current);
                 stack.push(reverse);
             }
-        }        
+        }
     }
-    cout << "end" << endl;
 }
 
 void DCEL::insertPoint(bool delaunay, Vector3& p)
@@ -423,7 +456,7 @@ void DCEL::insertPoint(bool delaunay, Vector3& p)
     //DELAUNAY ALGORITHM
     if(delaunay)
     {
-        makeDelaunay(w, face1, face2, face3, face4);
+        //makeDelaunay(w, face1, face2, face3, face4);
     }
 }
 
@@ -483,7 +516,7 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
     }
 
     //TESTING
-    /*for (int j = 0; j < faces.size(); ++j) {
+    for (int j = 0; j < faces.size(); ++j) {
         Face *f = faces[j];
         Vector3 a = f->getBoundary()->getOrigin()->getVertex();
         Vector3 b = f->getBoundary()->getNext()->getOrigin()->getVertex();
@@ -496,7 +529,7 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
             cout << Math::orientation2D(a,b,c) << endl;
         }
     }
-    cout << "OK" << endl;*/
+    cout << "OK" << endl;
 }
 
 bool DCEL::compareVectors(Vector3& a, Vector3& b)
@@ -543,7 +576,6 @@ void DCEL::constructEnclosingTriangle(Vector3& A, Vector3& B, Vector3& C)
     tieEdges(eAB,a,eBA,b);
     tieEdges(eBC,b,eCB,c);
     tieEdges(eCA,c,eAC,a);
-
 }
 
 //Recieves a triangle pqr and a test point w
