@@ -294,29 +294,6 @@ void DCEL::insertPointInTriangleEdge(
     if(Math::orientation2D(C,A,W) < 0) correctTriangle(f4);
 }
 
-void DCEL::doDelaunayFlip(HalfEdge* eCB)
-{
-        /*HalfEdge *eAW = eBA->getNext();
-        HalfEdge *eWB = eAW->getNext();
-        
-        HalfEdge *eAB = eBA->getTwin();
-        HalfEdge *eBV = eAB->getNext();
-        HalfEdge *eVA = eBV->getNext();
-        
-        Vertex *a = eAW->getOrigin();
-        Vertex *b = eBV->getOrigin();
-        Vertex *v = eVA->getOrigin();
-        Vertex *w = eWB->getOrigin();
-        
-        Face* face1 = eBA->getFace();
-        Face* face2 = eAB->getFace();
-        
-        tieTriangle(eBV, eBA, eWB, face1);
-        tieTriangle(eVA, eAW, eAB, face2);
-        
-        tieEdges(eAB, w, eBA, v);*/     
-}
-
 bool DCEL::isConvex(Vector3& W, Vector3& A, Vector3& V, Vector3& B) {
     return (triangleTest(W,A,V,B) == 2 and triangleTest(A,V,B,W) == 2 
         and triangleTest(V,B,W,A) == 2 and triangleTest(B,W,A,V) == 2);
@@ -373,53 +350,14 @@ Face* face4)
             if(isConvex(W,A,V,B)) {
                 if(Math::orientation25D(W,A,B,V) > 0) {
 
-                    eAB->setOrigin(w);
-                    eBA->setOrigin(v);
+                    tieEdges(eAB,w,eBA,v);
 
-                    eWA->setNext(eAV);
-                    eAV->setNext(eBA);
-                    eBA->setNext(eWA);
-                    eWA->setFace(current);
-                    eAV->setFace(current);
-                    eBA->setFace(current);
-                    current->setBoundary(eWA);
-
-                    eAB->setNext(eVB);
-                    eVB->setNext(eBW);
-                    eBW->setNext(eAB);
-                    eAB->setFace(reverse);
-                    eVB->setFace(reverse);
-                    eBW->setFace(reverse);
-                    reverse->setBoundary(eAB);
+                    tieTriangle(eWA,eAV,eBA,current);
+                    tieTriangle(eAB,eVB,eBW,reverse);
 
                     stack.push(current);
                     stack.push(reverse);  
-                }
-                /*else if(Math::orientation2D(W,A,B) > 0 and Math::orientation25D(W,A,B,V) < 0) {
-
-
-                    eAB->setOrigin(v);
-                    eBA->setOrigin(w);
-
-                    eWA->setNext(eAV);
-                    eAV->setNext(eAB);
-                    eAB->setNext(eWA);
-                    eWA->setFace(current);
-                    eAV->setFace(current);
-                    eAB->setFace(current);
-                    current->setBoundary(eWA);
-
-                    eBA->setNext(eVB);
-                    eVB->setNext(eBW);
-                    eBW->setNext(eBA);
-                    eBA->setFace(reverse);
-                    eVB->setFace(reverse);
-                    eBW->setFace(reverse);
-                    reverse->setBoundary(eBA);
-
-                    stack.push(current);
-                    stack.push(reverse);
-                }*/
+                }                
             }
         }
     }
@@ -522,8 +460,8 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
         insertPoint(delaunay, p);
     }
 
-    //TESTING
-    for (int j = 0; j < faces.size(); ++j) {
+    //TESTING counter clockwise
+    /*for (int j = 0; j < faces.size(); ++j) {
         Face *f = faces[j];
         Vector3 a = f->getBoundary()->getOrigin()->getVertex();
         Vector3 b = f->getBoundary()->getNext()->getOrigin()->getVertex();
@@ -536,7 +474,7 @@ DCEL::DCEL(bool delaunay, const vector<Vector3>& ps)
             cout << Math::orientation2D(a,b,c) << endl;
         }
     }
-    cout << "OK" << endl;
+    cout << "OK" << endl;*/
 }
 
 bool DCEL::compareVectors(Vector3& a, Vector3& b)

@@ -76,8 +76,7 @@ namespace geoc {
 	    void insertPointInTriangleEdge(Vertex* w, Face* f1, Face* f2,
 			Face* f3, Face* f4);
 	    bool isConvex(Vector3& W, Vector3& A, Vector3& V, Vector3& B);
-		void makeDelaunay(Vertex* w, Face* face1, Face* face2, Face* face3, Face* face4);
-	    void doDelaunayFlip(HalfEdge* eCB);	    
+		void makeDelaunay(Vertex* w, Face* face1, Face* face2, Face* face3, Face* face4);    
 	    void tieEdges(HalfEdge* eAB, Vertex* a, HalfEdge* eBA, Vertex* b);
 		void tieTriangle(HalfEdge* eAB, HalfEdge* eBC, HalfEdge* eCA, Face* f);
 
