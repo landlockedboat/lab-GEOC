@@ -317,6 +317,11 @@ void DCEL::doDelaunayFlip(HalfEdge* eCB)
         tieEdges(eAB, w, eBA, v);*/     
 }
 
+bool DCEL::isConvex(Vector3& W, Vector3& A, Vector3& V, Vector3& B) {
+    return (triangleTest(W,A,V,B) == 2 and triangleTest(A,V,B,W) == 2 
+        and triangleTest(V,B,W,A) == 2 and triangleTest(B,W,A,V) == 2);
+}
+
 
 void DCEL::makeDelaunay(
 Vertex* w, 
@@ -365,56 +370,56 @@ Face* face4)
             Vector3 A = a->getVertex();
             Vector3 B = b->getVertex();
             Vector3 V = v->getVertex();
+            if(isConvex(W,A,V,B)) {
+                if(Math::orientation25D(W,A,B,V) > 0) {
 
-            if(Math::orientation2D(W,A,B) < 0 and Math::orientation25D(W,A,B,V) > 0) {
-                cout << 1 << endl;
+                    eAB->setOrigin(w);
+                    eBA->setOrigin(v);
 
-                eAB->setOrigin(w);
-                eBA->setOrigin(v);
+                    eWA->setNext(eAV);
+                    eAV->setNext(eBA);
+                    eBA->setNext(eWA);
+                    eWA->setFace(current);
+                    eAV->setFace(current);
+                    eBA->setFace(current);
+                    current->setBoundary(eWA);
 
-                eWA->setNext(eAV);
-                eAV->setNext(eBA);
-                eBA->setNext(eWA);
-                eWA->setFace(current);
-                eAV->setFace(current);
-                eBA->setFace(current);
-                current->setBoundary(eWA);
+                    eAB->setNext(eVB);
+                    eVB->setNext(eBW);
+                    eBW->setNext(eAB);
+                    eAB->setFace(reverse);
+                    eVB->setFace(reverse);
+                    eBW->setFace(reverse);
+                    reverse->setBoundary(eAB);
 
-                eAB->setNext(eVB);
-                eVB->setNext(eBW);
-                eBW->setNext(eAB);
-                eAB->setFace(reverse);
-                eVB->setFace(reverse);
-                eBW->setFace(reverse);
-                reverse->setBoundary(eAB);
-                
-                stack.push(current);
-                stack.push(reverse);  
-            }
-            else if(Math::orientation2D(W,A,B) > 0 and Math::orientation25D(W,A,B,V) < 0) {
+                    stack.push(current);
+                    stack.push(reverse);  
+                }
+                /*else if(Math::orientation2D(W,A,B) > 0 and Math::orientation25D(W,A,B,V) < 0) {
 
-                cout << "asdf" << endl;
-                /*eAB->setOrigin(v);
-                eBA->setOrigin(w);
 
-                eWA->setNext(eAV);
-                eAV->setNext(eAB);
-                eAB->setNext(eWA);
-                eWA->setFace(current);
-                eAV->setFace(current);
-                eAB->setFace(current);
-                current->setBoundary(eWA);
+                    eAB->setOrigin(v);
+                    eBA->setOrigin(w);
 
-                eBA->setNext(eVB);
-                eVB->setNext(eBW);
-                eBW->setNext(eBA);
-                eBA->setFace(reverse);
-                eVB->setFace(reverse);
-                eBW->setFace(reverse);
-                reverse->setBoundary(eBA);
+                    eWA->setNext(eAV);
+                    eAV->setNext(eAB);
+                    eAB->setNext(eWA);
+                    eWA->setFace(current);
+                    eAV->setFace(current);
+                    eAB->setFace(current);
+                    current->setBoundary(eWA);
 
-                stack.push(current);
-                stack.push(reverse);*/
+                    eBA->setNext(eVB);
+                    eVB->setNext(eBW);
+                    eBW->setNext(eBA);
+                    eBA->setFace(reverse);
+                    eVB->setFace(reverse);
+                    eBW->setFace(reverse);
+                    reverse->setBoundary(eBA);
+
+                    stack.push(current);
+                    stack.push(reverse);
+                }*/
             }
         }
     }
